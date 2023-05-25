@@ -18,3 +18,15 @@ const int joyStick2_Y = A3;
 // Definición de pines para los botones
 const int automatico1 = 2;
 const int manual2 = 3;
+
+// Variables para almacenar los valores de los joysticks
+volatile int joyStick1XValue = 0;
+volatile int joyStick1YValue = 0;
+volatile int joyStick2XValue = 0;
+volatile int joyStick2YValue = 0;
+
+// Variables para almacenar los ángulos de los servomotores
+volatile int codoAngle = 90;
+volatile int brazoAngle = 90;
+volatile int munecaAngle = 90;
+volatile int garraAngle = 90;
