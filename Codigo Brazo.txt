@@ -1,1 +1,4 @@
 //Código para arduino
+#include <Servo.h>
+#include <EEPROM.h>
+#include <LiquidCrystal_I2C.h>
