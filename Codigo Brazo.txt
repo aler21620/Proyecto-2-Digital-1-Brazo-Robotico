@@ -44,3 +44,20 @@ Servo codo;
 Servo brazo;
 Servo muneca;
 Servo garra;
+
+
+// Función para actualizar los ángulos de los servomotores
+void updateServoAngles() {
+  // Actualizar los ángulos de los servomotores
+  // utilizando los valores de los joysticks
+  codoAngle = map(joyStick1XValue, 0, 1023, 0, 180);
+  brazoAngle = map(joyStick1YValue, 0, 1023, 0, 180);
+  munecaAngle = map(joyStick2XValue, 0, 1023, 0, 180);
+  garraAngle = map(joyStick2YValue, 0, 1023, 0, 180);
+
+  // Mover los servomotores a los ángulos correspondientes
+  codo.write(servo1Angle);
+  brazo.write(servo2Angle);
+  muneca.write(servo3Angle);
+  garra.write(servo4Angle);
+}
