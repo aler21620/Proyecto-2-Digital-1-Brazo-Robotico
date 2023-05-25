@@ -30,3 +30,17 @@ volatile int codoAngle = 90;
 volatile int brazoAngle = 90;
 volatile int munecaAngle = 90;
 volatile int garraAngle = 90;
+
+// Definición de pines para la pantalla LCD
+const int lcdAddr = 0x27; // Dirección I2C de la pantalla
+const int lcdCols = 16;   // Número de columnas de la pantalla
+const int lcdRows = 2;    // Número de filas de la pantalla
+
+// Variables para la pantalla LCD
+LiquidCrystal_I2C lcd(lcdAddr, lcdCols, lcdRows);
+
+// Crear objetos de tipo Servo
+Servo codo;
+Servo brazo;
+Servo muneca;
+Servo garra;
