@@ -2,3 +2,19 @@
 #include <Servo.h>
 #include <EEPROM.h>
 #include <LiquidCrystal_I2C.h>
+
+// Definición de pines para los servomotores
+const int codo = 6;
+const int brazo = 9;
+const int muneca = 10;
+const int garra = 11;
+
+// Definición de pines para los joysticks
+const int joyStick1_X = A0;
+const int joyStick1_Y = A1;
+const int joyStick2_X = A2;
+const int joyStick2_Y = A3;
+
+// Definición de pines para los botones
+const int automatico1 = 2;
+const int manual2 = 3;
