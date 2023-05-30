@@ -1,0 +1,63 @@
+// Función para leer un valor analógico utilizando registros ADC
+int leerjoystick(int pin) {
+  // Mapear los pines analógicos a los pines digitales correspondientes
+  if (pin >= 14 && pin <= 19) {
+    pin -= 14;
+  }
+
+  // Seleccionar el pin ADC
+  ADMUX = (ADMUX & 0xF0) | (pin & 0x0F);
+
+  // Configurar la referencia de voltaje y ajuste de izquierda a derecha
+  ADMUX |= (1 << REFS0) | (0 << ADLAR);
+
+  // Habilitar el ADC y configurar el prescaler para obtener una frecuencia de muestreo adecuada
+  ADCSRA |= (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
+
+  // Iniciar la conversión
+  ADCSRA |= (1 << ADSC);
+
+  // Esperar a que la conversión se complete
+  while (ADCSRA & (1 << ADSC));
+
+  // Leer el valor convertido
+  int value = ADC;
+
+  // Deshabilitar el ADC para ahorrar energía
+  ADCSRA &= ~(1 << ADEN);
+
+  return value;
+}
+
+void setup() {
+  // Iniciar comunicación serial a 9600 baudios
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Leer los ángulos de los servomotores desde los potenciómetros
+  int codoAngle = map(leerjoystick(A0), 0, 1023, 0, 180);
+  int brazoAngle = map(leerjoystick(A1), 0, 1023, 0, 180);
+  int munecaAngle = map(leerjoystick(A2), 0, 1023, 0, 180);
+  int garraAngle = map(leerjoystick(A3), 0, 1023, 0, 180);
+
+  // Enviar los ángulos de los servomotores a Arduino Uno 1 a través de la comunicación serial
+  Serial.print("Codo:");
+  Serial.print(codoAngle);
+  Serial.print("\n");
+
+  Serial.print("Brazo:");
+  Serial.print(brazoAngle);
+  Serial.print("\n");
+
+  Serial.print("Muneca:");
+  Serial.print(munecaAngle);
+  Serial.print("\n");
+
+  Serial.print("Garra:");
+  Serial.print(garraAngle);
+  Serial.print("\n");
+
+  // Retardo para evitar lecturas rápidas y mejorar la estabilidad
+  delay(50);
+}
