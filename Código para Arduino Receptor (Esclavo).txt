@@ -1,4 +1,5 @@
 #include <Servo.h>
+#include <LiquidCrystal_I2C.h>
 
 // Definición de pines para los servomotores
 const int codopin = 6;
@@ -17,6 +18,14 @@ Servo codo;
 Servo brazo;
 Servo muneca;
 Servo garra;
+
+// Definición de pines para la pantalla LCD
+const int lcdAddr = 0x27; // Dirección I2C de la pantalla
+const int lcdCols = 16;   // Número de columnas de la pantalla
+const int lcdRows = 2;    // Número de filas de la pantalla
+
+// Variables para la pantalla LCD
+LiquidCrystal_I2C lcd(lcdAddr, lcdCols, lcdRows);
 
 void cambioangulo() {
   // Mover los servomotores a los ángulos correspondientes
