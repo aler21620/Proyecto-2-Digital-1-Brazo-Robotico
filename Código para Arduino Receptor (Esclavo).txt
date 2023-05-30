@@ -1,0 +1,66 @@
+#include <Servo.h>
+
+// Definición de pines para los servomotores
+const int codopin = 6;
+const int brazopin = 9;
+const int munecapin = 10;
+const int garrapin = 11;
+
+// Variables para almacenar los ángulos de los servomotores
+int codoAngle = 90;
+int brazoAngle = 90;
+int munecaAngle = 90;
+int garraAngle = 90;
+
+// Crear objetos de tipo Servo
+Servo codo;
+Servo brazo;
+Servo muneca;
+Servo garra;
+
+void cambioangulo() {
+  // Mover los servomotores a los ángulos correspondientes
+  codo.write(codoAngle);
+  muneca.write(munecaAngle);
+  garra.write(garraAngle);
+  brazo.write(brazoAngle);
+}
+
+void setup() {
+  // Configurar los pines de los servomotores como salidas utilizando registros
+  DDRB |= (1 << codopin) | (1 << brazopin) | (1 << munecapin) | (1 << garrapin);
+
+  // Inicializar los objetos de tipo Servo
+  codo.attach(codopin);
+  brazo.attach(brazopin);
+  muneca.attach(munecapin);
+  garra.attach(garrapin);
+
+  // Iniciar comunicación serial a 9600 baudios
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Verificar si hay datos disponibles en la comunicación serial
+  if (Serial.available() > 0) {
+    // Leer la línea de datos recibida
+    String data = Serial.readStringUntil('\n');
+
+    // Analizar los ángulos de los servomotores desde la línea de datos
+    if (data.startsWith("Codo:")) {
+      codoAngle = data.substring(5).toInt();
+    }
+    if (data.startsWith("Brazo:")) {
+      brazoAngle = data.substring(6).toInt();
+    }
+    if (data.startsWith("Muneca:")) {
+      munecaAngle = data.substring(7).toInt();
+    }
+    if (data.startsWith("Garra:")) {
+      garraAngle = data.substring(6).toInt();
+    }
+
+    // Actualizar los ángulos de los servomotores
+    cambioangulo();
+  }
+}
