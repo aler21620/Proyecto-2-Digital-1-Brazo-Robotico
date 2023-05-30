@@ -4,10 +4,10 @@
 #include <LiquidCrystal_I2C.h>
 
 // Definición de pines para los servomotores
-const int codo = 6;
-const int brazo = 9;
-const int muneca = 10;
-const int garra = 11;
+const int codopin = 6;
+const int brazopin = 9;
+const int munecapin = 10;
+const int garrapin = 11;
 
 // Definición de pines para los joysticks
 const int joyStick1_X = A0;
@@ -18,12 +18,6 @@ const int joyStick2_Y = A3;
 // Definición de pines para los botones
 const int automatico1 = 2;
 const int manual2 = 3;
-
-// Variables para almacenar los valores de los joysticks
-volatile int joyStick1XValue = 0;
-volatile int joyStick1YValue = 0;
-volatile int joyStick2XValue = 0;
-volatile int joyStick2YValue = 0;
 
 // Variables para almacenar los ángulos de los servomotores
 volatile int codoAngle = 90;
@@ -45,19 +39,67 @@ Servo brazo;
 Servo muneca;
 Servo garra;
 
-
 // Función para actualizar los ángulos de los servomotores
-void updateServoAngles() {
-  // Actualizar los ángulos de los servomotores
-  // utilizando los valores de los joysticks
-  codoAngle = map(joyStick1XValue, 0, 1023, 0, 180);
-  brazoAngle = map(joyStick1YValue, 0, 1023, 0, 180);
-  munecaAngle = map(joyStick2XValue, 0, 1023, 0, 180);
-  garraAngle = map(joyStick2YValue, 0, 1023, 0, 180);
+void cambioangulo() {
+  // Actualizar los ángulos de los servomotores utilizando los valores de los joysticks
+  codoAngle = map(leerjoystick(joyStick2_X), 0, 1023, 0, 180);
+  munecaAngle = map(leerjoystick(joyStick2_Y), 0, 1023, 0, 180);
+  garraAngle = map(leerjoystick(joyStick1_X), 0, 1023, 0, 180);
+  brazoAngle = map(leerjoystick(joyStick1_Y), 0, 1023, 0, 180);
 
   // Mover los servomotores a los ángulos correspondientes
   codo.write(servo1Angle);
   brazo.write(servo2Angle);
   muneca.write(servo3Angle);
   garra.write(servo4Angle);
+}
+
+// Función para leer un valor analógico utilizando registros ADC
+int leerjoystick(int pin) {
+  // Mapear los pines analógicos a los pines digitales correspondientes
+  if (pin >= 14 && pin <= 19) {
+    pin -= 14;
+  }
+
+  // Seleccionar el pin ADC
+  ADMUX = (ADMUX & 0xF0) | (pin & 0x0F);
+
+  // Configurar la referencia de voltaje y ajuste de izquierda a derecha
+  ADMUX |= (1 << REFS0) | (0 << ADLAR);
+
+  // Habilitar el ADC y configurar el prescaler para obtener una frecuencia de muestreo adecuada
+  ADCSRA |= (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
+
+  // Iniciar la conversión
+  ADCSRA |= (1 << ADSC);
+
+  // Esperar a que la conversión se complete
+  while (ADCSRA & (1 << ADSC));
+
+  // Leer el valor convertido
+  int value = ADC;
+
+  // Deshabilitar el ADC para ahorrar energía
+  ADCSRA &= ~(1 << ADEN);
+
+  return value;
+}
+
+void setup() {
+  // Configurar los pines de los servomotores como salidas utilizando registros
+  DDRB |= (1 << codopin) | (1 << brazopin) | (1 << munecapin) | (1 << garrapin);
+
+  // Inicializar los objetos de tipo Servo
+  codo.attach(codopin);
+  brazo.attach(brazopin);
+  muneca.attach(munecapin);
+  garra.attach(garrapin);
+}
+
+void loop() {
+  // Actualizar los ángulos de los servomotores
+  cambioangulo();
+
+  // Retardo para evitar lecturas rápidas y mejorar la estabilidad
+  delay(50);
 }
