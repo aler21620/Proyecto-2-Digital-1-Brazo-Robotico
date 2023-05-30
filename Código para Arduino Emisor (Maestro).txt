@@ -50,7 +50,7 @@ void loop() {
   Serial.print(brazoAngle);
   Serial.print("\n");
 
-  Serial.print("Muneca:");
+  Serial.print("Muñeca:");
   Serial.print(munecaAngle);
   Serial.print("\n");
 
