@@ -1,3 +1,7 @@
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(32, 16, 2); // Dirección I2C y dimensiones del LCD (16 columnas y 2 filas)
+
 // Definición de pines para los joysticks
 const int joyStick1_X = A0;
 const int joyStick1_Y = A1;
@@ -10,6 +14,9 @@ int codoAngle = 90;
 int brazoAngle = 90;
 int munecaAngle = 90;
 int garraAngle = 90;
+
+int lastServoIndex = -1; // Índice del último servo movido (-1 significa que no se ha movido ningún servo)
+
 
 // Función para leer un valor analógico utilizando registros ADC
 int leerjoystick(int pin) {
@@ -43,7 +50,7 @@ int leerjoystick(int pin) {
 }
 
 void setup() {
-  // Iniciar comunicación serial a 9600 baudios
+  
   DDRB |= (1 << PB2);
   // Inicializar el objeto servo
   TCCR1A = 0;
@@ -54,6 +61,17 @@ void setup() {
   TCCR1B |= (1 << CS12) | (1 << CS10); // Configuramos el preescalador a 1024
   TIMSK1 |= (1 << OCIE1A); // Se habilita la interrupcion
   sei(); // Se activan las interrupciones
+
+
+  lcd.init(); // Inicializar el LCD
+  lcd.backlight();
+  lcd.print("Brazo Robotico:"); // Mostrar "Servo:" en la primera línea del LCD
+  lcd.setCursor(0,1); 
+  lcd.print("Bienvenidos"); 
+  delay(2000);
+  lcd.clear();
+  
+  // Iniciar comunicación serial a 9600 baudios
   Serial.begin(9600);
 }
 
@@ -80,9 +98,32 @@ void loop() {
   Serial.print(",");
   Serial.println(garraAngle);
 
+  lcd.setCursor(1,0);
+  
+  int currentServoIndex = -1; // Índice del servo actual
+
+  // Verificar los valores de los potenciómetros y determinar el servo correspondiente
+  if (joyStick1_XValue >= 0 && joyStick1_XValue <= 400) {
+    currentServoIndex = 0;
+  } else if (joyStick1_YValue >= 0 && joyStick1_YValue <= 400) {
+    currentServoIndex = 1;
+  } else if (joyStick2_YValue >= 0 && joyStick2_YValue <= 400) {
+    currentServoIndex = 2;
+  } else if (joyStick2_XValue >= 0 && joyStick2_XValue <= 400) {
+    currentServoIndex = 3;
+  }
+
+  // Si hay un cambio en el servo movido, mostrar el nombre del servo en la LCD
+  if (currentServoIndex != -1 && currentServoIndex != lastServoIndex) {
+    lcd.clear();
+    lcd.print("Moviendo ...");
+    lastServoIndex = currentServoIndex; // Actualizar el último servo movido
+  }
+
   // Retardo para evitar lecturas rápidas y mejorar la estabilidad
   delay(50);
 }
+
 ISR(TIMER1_COMPA_vect) {
   // Se apagan los LEDs
   PORTB &= (~(1 << PB2));
