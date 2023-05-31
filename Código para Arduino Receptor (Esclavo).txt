@@ -1,5 +1,4 @@
 #include <Servo.h>
-#include <LiquidCrystal_I2C.h>
 
 // Definición de pines para los servomotores
 const int codopin = 6;
@@ -7,35 +6,16 @@ const int brazopin = 9;
 const int munecapin = 10;
 const int garrapin = 11;
 
-// Variables para almacenar los ángulos de los servomotores
-int codoAngle = 90;
-int brazoAngle = 90;
-int munecaAngle = 90;
-int garraAngle = 90;
-
 // Crear objetos de tipo Servo
 Servo codo;
 Servo brazo;
 Servo muneca;
 Servo garra;
 
-// Definición de pines para la pantalla LCD
-const int lcdAddr = 0x27; // Dirección I2C de la pantalla
-const int lcdCols = 16;   // Número de columnas de la pantalla
-const int lcdRows = 2;    // Número de filas de la pantalla
-
-// Variables para la pantalla LCD
-LiquidCrystal_I2C lcd(lcdAddr, lcdCols, lcdRows);
-
-void cambioangulo() {
-  // Mover los servomotores a los ángulos correspondientes
-  codo.write(codoAngle);
-  muneca.write(munecaAngle);
-  garra.write(garraAngle);
-  brazo.write(brazoAngle);
-}
-
 void setup() {
+  // Iniciar comunicación serial a 9600 baudios
+  Serial.begin(9600);
+  
   // Configurar los pines de los servomotores como salidas utilizando registros
   DDRB |= (1 << codopin) | (1 << brazopin) | (1 << munecapin) | (1 << garrapin);
 
@@ -44,32 +24,32 @@ void setup() {
   brazo.attach(brazopin);
   muneca.attach(munecapin);
   garra.attach(garrapin);
-
-  // Iniciar comunicación serial a 9600 baudios
-  Serial.begin(9600);
+  
 }
 
 void loop() {
-  // Verificar si hay datos disponibles en la comunicación serial
+  
   if (Serial.available() > 0) {
     // Leer la línea de datos recibida
     String data = Serial.readStringUntil('\n');
 
-    // Analizar los ángulos de los servomotores desde la línea de datos
-    if (data.startsWith("Codo:")) {
-      codoAngle = data.substring(5).toInt();
-    }
-    if (data.startsWith("Brazo:")) {
-      brazoAngle = data.substring(6).toInt();
-    }
-    if (data.startsWith("Muneca:")) {
-      munecaAngle = data.substring(7).toInt();
-    }
-    if (data.startsWith("Garra:")) {
-      garraAngle = data.substring(6).toInt();
-    }
+    // Separar los ángulos de los servomotores
+    int separatorIndex1 = data.indexOf(",");
+    int separatorIndex2 = data.indexOf(",", separatorIndex1 + 1);
+    int separatorIndex3 = data.indexOf(",", separatorIndex2 + 1);
 
-    // Actualizar los ángulos de los servomotores
-    cambioangulo();
+    if (separatorIndex1 != -1 && separatorIndex2 != -1 && separatorIndex3 != -1) {
+      // Extraer los ángulos de los servomotores
+      int codoAngle = data.substring(0, separatorIndex1).toInt();
+      int brazoAngle = data.substring(separatorIndex1 + 1, separatorIndex2).toInt();
+      int munecaAngle = data.substring(separatorIndex2 + 1, separatorIndex3).toInt();
+      int garraAngle = data.substring(separatorIndex3 + 1).toInt();
+
+      // Mover los servomotores a los ángulos recibidos
+      codo.write(codoAngle);
+      brazo.write(brazoAngle);
+      muneca.write(munecaAngle);
+      garra.write(garraAngle);
+    }
   }
-}
+ }
