@@ -1,3 +1,16 @@
+// Definición de pines para los joysticks
+const int joyStick1_X = A0;
+const int joyStick1_Y = A1;
+const int joyStick2_X = A2;
+const int joyStick2_Y = A3;
+int ledState = 0;
+
+// Variables para almacenar los ángulos de los servomotores
+int codoAngle = 90;
+int brazoAngle = 90;
+int munecaAngle = 90;
+int garraAngle = 90;
+
 // Función para leer un valor analógico utilizando registros ADC
 int leerjoystick(int pin) {
   // Mapear los pines analógicos a los pines digitales correspondientes
@@ -31,33 +44,56 @@ int leerjoystick(int pin) {
 
 void setup() {
   // Iniciar comunicación serial a 9600 baudios
+  DDRB |= (1 << PB2);
+  // Inicializar el objeto servo
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1 = 0; //Reestablecer
+  OCR1A = 15624; // Es el tiempo en que ocurre la interrupción
+  TCCR1B |= (1 << WGM12);
+  TCCR1B |= (1 << CS12) | (1 << CS10); // Configuramos el preescalador a 1024
+  TIMSK1 |= (1 << OCIE1A); // Se habilita la interrupcion
+  sei(); // Se activan las interrupciones
   Serial.begin(9600);
 }
 
 void loop() {
-  // Leer los ángulos de los servomotores desde los potenciómetros
-  int codoAngle = map(leerjoystick(A0), 0, 1023, 0, 180);
-  int brazoAngle = map(leerjoystick(A1), 0, 1023, 0, 180);
-  int munecaAngle = map(leerjoystick(A2), 0, 1023, 0, 180);
-  int garraAngle = map(leerjoystick(A3), 0, 1023, 0, 180);
+  // Leer los valores de los joysticks
+  int joyStick1_XValue = leerjoystick(joyStick1_X);
+  int joyStick1_YValue = leerjoystick(joyStick1_Y);
+  int joyStick2_XValue = leerjoystick(joyStick2_X);
+  int joyStick2_YValue = leerjoystick(joyStick2_Y);
 
-  // Enviar los ángulos de los servomotores a Arduino Uno 1 a través de la comunicación serial
-  Serial.print("Codo:");
+  // Actualizar los ángulos de los servomotores
+  codoAngle = map(joyStick2_XValue, 0, 1023, 0, 180);
+  brazoAngle = map(joyStick1_YValue, 0, 1023, 0, 180);
+  munecaAngle = map(joyStick2_YValue, 0, 1023, 0, 180);
+  garraAngle = map(joyStick1_XValue, 0, 1023, 0, 180);
+  
+   
+  // Enviar los ángulos de los servomotores a través de la comunicación serial
   Serial.print(codoAngle);
-  Serial.print("\n");
-
-  Serial.print("Brazo:");
+  Serial.print(",");
   Serial.print(brazoAngle);
-  Serial.print("\n");
-
-  Serial.print("Muneca:");
+  Serial.print(",");
   Serial.print(munecaAngle);
-  Serial.print("\n");
-
-  Serial.print("Garra:");
-  Serial.print(garraAngle);
-  Serial.print("\n");
+  Serial.print(",");
+  Serial.println(garraAngle);
 
   // Retardo para evitar lecturas rápidas y mejorar la estabilidad
   delay(50);
+}
+ISR(TIMER1_COMPA_vect) {
+  // Se apagan los LEDs
+  PORTB &= (~(1 << PB2));
+
+  // Condiciones para que se enciendan los LEDs
+  if (ledState == 0) {
+    PORTB |= (1 << PB2);
+  }
+  ledState++;
+  // Se reinicia el estado del LED y la secuencia se repite desde el inicio
+  if (ledState > 3) {
+    ledState = 0;
+  }
 }
