@@ -8,6 +8,7 @@ const int joyStick1_Y = A1;
 const int joyStick2_X = A2;
 const int joyStick2_Y = A3;
 int ledState = 0;
+int buttonstate1 = 0;
 
 // Variables para almacenar los ángulos de los servomotores
 int codoAngle = 90;
@@ -52,6 +53,7 @@ int leerjoystick(int pin) {
 void setup() {
   
   DDRB |= (1 << PB2);
+  DDRD &= ~((1 << PD4));
   // Inicializar el objeto servo
   TCCR1A = 0;
   TCCR1B = 0;
@@ -60,6 +62,8 @@ void setup() {
   TCCR1B |= (1 << WGM12);
   TCCR1B |= (1 << CS12) | (1 << CS10); // Configuramos el preescalador a 1024
   TIMSK1 |= (1 << OCIE1A); // Se habilita la interrupcion
+  PCICR |= B00000100; // Se activan las interrupciones del puerto PD
+  PCMSK2 |= B00010000;
   sei(); // Se activan las interrupciones
 
 
@@ -125,16 +129,23 @@ void loop() {
 }
 
 ISR(TIMER1_COMPA_vect) {
-  // Se apagan los LEDs
+  // Se apaga la led
   PORTB &= (~(1 << PB2));
 
-  // Condiciones para que se enciendan los LEDs
+  // Condiciones para que se encienda la led
   if (ledState == 0) {
     PORTB |= (1 << PB2);
   }
   ledState++;
-  // Se reinicia el estado del LED y la secuencia se repite desde el inicio
+  // Se reinicia el estado del LED
   if (ledState > 3) {
     ledState = 0;
+  }
+}
+//Interrupcion para el boton de led cuando hay ganador
+ISR (PCINT2_vect) {
+  if (PIND & B00010000) {
+    buttonstate1 = 1;
+    Serial.println(buttonstate1);
   }
 }

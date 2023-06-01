@@ -18,7 +18,7 @@ void setup() {
   
   // Configurar los pines de los servomotores como salidas utilizando registros
   DDRB |= (1 << codopin) | (1 << brazopin) | (1 << munecapin) | (1 << garrapin);
-
+  DDRD |= (1 << PD4);
   // Inicializar los objetos de tipo Servo
   codo.attach(codopin);
   brazo.attach(brazopin);
@@ -50,6 +50,12 @@ void loop() {
       brazo.write(brazoAngle);
       muneca.write(munecaAngle);
       garra.write(garraAngle);
+    }
+    int buttonstate1 = Serial.parseInt();
+    if (buttonstate1 == 1) {
+      PORTD |= (1 << PD4);
+    } else {
+      PORTD &= (~(1 << PD4));
     }
   }
  }
