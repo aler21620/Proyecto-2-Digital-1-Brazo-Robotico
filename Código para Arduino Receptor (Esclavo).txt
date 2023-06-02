@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <Servo.h>
 
 // Definición de pines para los servomotores
@@ -14,9 +15,27 @@ Servo brazo;
 Servo muneca;
 Servo garra;
 
+//Variables para EEPROM
+const int botonGuardar = 2;
+const int botonReproducir = 8;
+int codoPosicion = 0;
+int brazoPosicion = 0;
+int munecaPosicion = 0;
+int garraPosicion = 0;
+
 void setup() {
   DDRD |= (1 << PD5);
   DDRD &= ~((1 << PD4));
+  
+   // Configurar el pin digital 2 como entrada
+  DDRD &= ~(1 << PD2);  // Establecer el pin D2 como entrada (bit en 0)
+  // Activar la resistencia de pull-up interna del botón
+  PORTD |= (1 << PD2);  // Establecer el bit correspondiente al pin D2 en 1
+
+  // Configurar el pin del botón como entrada utilizando registros
+  DDRB &= ~(1 << PB0);  // Establecer el bit 0 del registro DDRB en 0 (entrada)
+  PORTB |= (1 << PB0);  // Habilitar la resistencia de pull-up interna del pin
+  
   PCICR |= B00000100; // Activamos las interrupciones del puerto PD
   PCMSK2 |= B00010000;
   sei();
@@ -30,11 +49,10 @@ void setup() {
   brazo.attach(brazopin);
   muneca.attach(munecapin);
   garra.attach(garrapin);
-  
 }
 
 void loop() {
-  
+    
   if (Serial.available() > 0) {
     // Leer la línea de datos recibida
     String data = Serial.readStringUntil('\n');
@@ -58,11 +76,55 @@ void loop() {
       garra.write(garraAngle);
     }
   }
+  
+  if (PIND & (1 << PD2)) {
+    // El botón de guardar ha sido presionado
+    guardarPosicionesEnEEPROM();
+  }
+
+  if (PINB & (1 << PB0)) {
+    // El botón de reproducir ha sido presionado
+    reproducirMovimientoDesdeEEPROM();
+  }
+  
 }
+
 ISR (PCINT2_vect) {
   // código a ejecutar
   PORTD &= (~(1 << PD5));
   if (PIND & B00010000) {
     PORTD |= (1 << PD5);
   }
+}
+
+
+void guardarPosicionesEnEEPROM() {
+  // Leer las posiciones actuales de los servos
+  codoPosicion = codo.read();
+  brazoPosicion = brazo.read();
+  munecaPosicion = muneca.read();
+  garraPosicion = garra.read();
+
+  // Guardar las posiciones en la EEPROM
+  EEPROM.write(0, codoPosicion);
+  EEPROM.write(1, brazoPosicion);
+  EEPROM.write(2, munecaPosicion);
+  EEPROM.write(3, garraPosicion);
+
+  // Esperar un momento para asegurarse de que la escritura se complete
+  delay(10);
+}
+
+void reproducirMovimientoDesdeEEPROM() {
+  // Leer las posiciones almacenadas en la EEPROM
+  codoPosicion = EEPROM.read(0);
+  brazoPosicion = EEPROM.read(1);
+  munecaPosicion = EEPROM.read(2);
+  garraPosicion = EEPROM.read(3);
+
+  // Mover los servos a las posiciones almacenadas
+  codo.write(codoPosicion);
+  brazo.write(brazoPosicion);
+  muneca.write(munecaPosicion);
+  garra.write(garraPosicion);
 }
