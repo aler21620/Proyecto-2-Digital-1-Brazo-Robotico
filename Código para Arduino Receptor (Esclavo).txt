@@ -1,11 +1,12 @@
-#include <EEPROM.h> // Agregar la librería EEPROM
 #include <Servo.h>
 
 // Definición de pines para los servomotores
+const int boton = 4;
 const int codopin = 6;
 const int brazopin = 9;
 const int munecapin = 10;
 const int garrapin = 11;
+int buttonstate1 = 0;
 
 // Crear objetos de tipo Servo
 Servo codo;
@@ -13,26 +14,23 @@ Servo brazo;
 Servo muneca;
 Servo garra;
 
-int servo1_savedAngle = 90; // Ángulo guardado para el servo 1
-int servo2_savedAngle = 90; // Ángulo guardado para el servo 2
-int servo3_savedAngle = 90; // Ángulo guardado para el servo 3
-int servo4_savedAngle = 90; // Ángulo guardado para el servo 4
-
 void setup() {
+  DDRD |= (1 << PD5);
+  DDRD &= ~((1 << PD4));
+  PCICR |= B00000100; // Activamos las interrupciones del puerto PD
+  PCMSK2 |= B00010000;
+  sei();
   // Iniciar comunicación serial a 9600 baudios
   Serial.begin(9600);
   
   // Configurar los pines de los servomotores como salidas utilizando registros
   DDRB |= (1 << codopin) | (1 << brazopin) | (1 << munecapin) | (1 << garrapin);
-  DDRD |= (1 << PD4);
   // Inicializar los objetos de tipo Servo
   codo.attach(codopin);
   brazo.attach(brazopin);
   muneca.attach(munecapin);
   garra.attach(garrapin);
-
-  // Leer las posiciones guardadas en la memoria EEPROM
-  readSavedPositions();
+  
 }
 
 void loop() {
@@ -58,86 +56,13 @@ void loop() {
       brazo.write(brazoAngle);
       muneca.write(munecaAngle);
       garra.write(garraAngle);
-      
-      // Actualizar las posiciones guardadas de los servos si se reciben nuevos ángulos
-      servo1_savedAngle = codoAngle;
-      servo2_savedAngle = brazoAngle;
-      servo3_savedAngle = munecaAngle;
-      servo4_savedAngle = garraAngle;
-
-      // Guardar las posiciones en la memoria EEPROM
-      savePositionsToEEPROM();
-    }
-    
-    const int playButton = 7;
-    bool buttonState = digitalRead(playButton);
-    
-    if (buttonState == HIGH) {
-      // Reproducir el movimiento guardado
-      playSavedPositions();
-    }
-
-    int buttonstate1 = Serial.parseInt();
-    if (buttonstate1 == 1) {
-      PORTD |= (1 << PD4);
-    } else {
-      PORTD &= (~(1 << PD4));
     }
   }
-
-  // Enviar las posiciones guardadas de los servos
-  sendSavedPositions();
- }
-
-void savePositionsToEEPROM() {
-  // Calcular las direcciones de memoria EEPROM para cada servo
-  int address1 = 0;
-  int address2 = address1 + sizeof(int);
-  int address3 = address2 + sizeof(int);
-  int address4 = address3 + sizeof(int);
-
-  // Guardar las posiciones en la memoria EEPROM
-  EEPROM.put(address1, servo1_savedAngle);
-  EEPROM.put(address2, servo2_savedAngle);
-  EEPROM.put(address3, servo3_savedAngle);
-  EEPROM.put(address4, servo4_savedAngle);
 }
-
-void readSavedPositions() {
-  // Calcular las direcciones de memoria EEPROM para cada servo
-  int address1 = 0;
-  int address2 = address1 + sizeof(int);
-  int address3 = address2 + sizeof(int);
-  int address4 = address3 + sizeof(int);
-
-  // Leer las posiciones de la memoria EEPROM
-  EEPROM.get(address1, servo1_savedAngle);
-  EEPROM.get(address2, servo2_savedAngle);
-  EEPROM.get(address3, servo3_savedAngle);
-  EEPROM.get(address4, servo4_savedAngle);
-}
-
-void sendSavedPositions() {
-  // Enviar los ángulos de los servos guardados
-  Serial.print(servo1_savedAngle);
-  Serial.print(",");
-  Serial.print(servo2_savedAngle);
-  Serial.print(",");
-  Serial.print(servo3_savedAngle);
-  Serial.print(",");
-  Serial.println(servo4_savedAngle);
-}
-
-void playSavedPositions() {
-  // Leer las posiciones guardadas desde la EEPROM
-  readSavedPositions();
-
-  // Mover los servomotores a las posiciones guardadas
-  codo.write(servo1_savedAngle);
-  brazo.write(servo2_savedAngle);
-  muneca.write(servo3_savedAngle);
-  garra.write(servo4_savedAngle);
-
-  // Mostrar mensaje de reproducción
-  Serial.println("Reproduciendo movimiento");
+ISR (PCINT2_vect) {
+  // código a ejecutar
+  PORTD &= (~(1 << PD5));
+  if (PIND & B00010000) {
+    PORTD |= (1 << PD5);
+  }
 }

@@ -1,16 +1,12 @@
-#include <EEPROM.h>
 #include <LiquidCrystal_I2C.h>
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Dirección I2C y dimensiones del LCD (16 columnas y 2 filas)
-
 // Definición de pines para los joysticks
 const int joyStick1_X = A0;
 const int joyStick1_Y = A1;
 const int joyStick2_X = A2;
 const int joyStick2_Y = A3;
-
 int ledState = 0;
-int buttonstate1 = 0;
 
 // Variables para almacenar los ángulos de los servomotores
 int codoAngle = 90;
@@ -19,14 +15,6 @@ int munecaAngle = 90;
 int garraAngle = 90;
 
 int lastServoIndex = -1; // Índice del último servo movido (-1 significa que no se ha movido ningún servo)
-
-int servo1_savedAngle = 90;
-int servo2_savedAngle = 90;
-int servo3_savedAngle = 90;
-int servo4_savedAngle = 90;
-
-bool savePosition = false;
-bool play = false; 
 
 // Función para leer un valor analógico utilizando registros ADC
 int leerjoystick(int pin) {
@@ -60,9 +48,8 @@ int leerjoystick(int pin) {
 }
 
 void setup() {
-  
-  DDRB |= (1 << PB2);
-  DDRD &= ~((1 << PD4));
+     
+  DDRB |= (1 << PB2) | (1 << PB3) | (1 << PB4);
   // Inicializar el objeto servo
   TCCR1A = 0;
   TCCR1B = 0;
@@ -71,11 +58,7 @@ void setup() {
   TCCR1B |= (1 << WGM12);
   TCCR1B |= (1 << CS12) | (1 << CS10); // Configuramos el preescalador a 1024
   TIMSK1 |= (1 << OCIE1A); // Se habilita la interrupcion
-  PCICR |= B00000100; // Se activan las interrupciones del puerto PD
-  PCMSK2 |= B00010000;
-  sei(); // Se activan las interrupciones
-
-
+  sei();
   lcd.init(); // Inicializar el LCD
   lcd.backlight();
   lcd.print("Brazo Robotico:"); // Mostrar "Servo:" en la primera línea del LCD
@@ -86,6 +69,7 @@ void setup() {
   
   // Iniciar comunicación serial a 9600 baudios
   Serial.begin(9600);
+  
 }
 
 void loop() {
@@ -110,7 +94,8 @@ void loop() {
   Serial.print(munecaAngle);
   Serial.print(",");
   Serial.println(garraAngle);
-
+  
+  
   lcd.setCursor(1,0);
   
   int currentServoIndex = -1; // Índice del servo actual
@@ -132,62 +117,16 @@ void loop() {
     lcd.print("Moviendo ...");
     lastServoIndex = currentServoIndex; // Actualizar el último servo movido
   }
-
-  checkSaveButton();
-
-  const int saveButton = 7;
-  bool buttonState = digitalRead(saveButton);
-
-  if (buttonState == HIGH && !savePosition) {
-    savePosition = true;
-    readSavedPositions(); // Leer las posiciones en la EEPROM
-
-    lcd.clear();
-    lcd.print("Reproduciendo");
-    lcd.setCursor(0, 1);
-    lcd.print("movimiento");
-    delay(2000);
-    lcd.clear();
-  }
   
-  const int playButton = 8;
-  bool playbuttonState = digitalRead(playButton);
-
-  if (playbuttonState == HIGH && !play) {
-    play = true;
-    savePositionsToEEPROM(); // Guardar las posiciones en la EEPROM
-
-    lcd.clear();
-    lcd.print("Posiciones");
-    lcd.setCursor(0, 1);
-    lcd.print("guardadas");
-    delay(2000);
-    lcd.clear();
-  }
-
-  Serial.print(codoAngle);
-  Serial.print(",");
-  Serial.print(brazoAngle);
-  Serial.print(",");
-  Serial.print(munecaAngle);
-  Serial.print(",");
-  Serial.println(garraAngle);
-
-  if (savePosition) {
-    readSavedPositions(); // Leer las posiciones guardadas desde la EEPROM
-    sendSavedPositions(); // Enviar las posiciones guardadas a través de la comunicación serial
-    savePosition = false;
-  }
-
   // Retardo para evitar lecturas rápidas y mejorar la estabilidad
   delay(50);
 }
 
 ISR(TIMER1_COMPA_vect) {
-  // Se apaga la led
-  PORTB &= (~(1 << PB2));
+  // Se apagan los LEDs
+  PORTB &= (~(1 << PB2)& ~(1 << PB3) & ~(1 << PB4));
 
-  // Condiciones para que se encienda la led
+  // Condiciones para que se enciendan los LEDs
   if (ledState == 0) {
     PORTB |= (1 << PB2);
   } else if (ledState == 1) {
@@ -196,66 +135,8 @@ ISR(TIMER1_COMPA_vect) {
     PORTB |= (1 << PB4);
   }
   ledState++;
-  // Se reinicia el estado del LED
+  // Se reinicia el estado del LED y la secuencia se repite desde el inicio
   if (ledState > 3) {
     ledState = 0;
   }
-}
-
-//Interrupcion para el boton de led cuando hay ganador
-ISR (PCINT2_vect) {
-  if (PIND & B00010000) {
-    buttonstate1 = 1;
-    Serial.println(buttonstate1);
-  }
-}
-
-void checkSaveButton() {
-  const int saveButton = 7;
-  static bool previousButtonState = LOW;
-  bool buttonState = digitalRead(saveButton);
-
-  if (buttonState != previousButtonState) {
-    if (buttonState == HIGH) {
-      savePosition = true;
-    } else {
-      savePosition = false;
-    }
-  }
-
-  previousButtonState = buttonState;
-}
-
-void savePositionsToEEPROM() {
-  int address1 = 0;
-  int address2 = address1 + sizeof(int);
-  int address3 = address2 + sizeof(int);
-  int address4 = address3 + sizeof(int);
-
-  EEPROM.put(address1, servo1_savedAngle);
-  EEPROM.put(address2, servo2_savedAngle);
-  EEPROM.put(address3, servo3_savedAngle);
-  EEPROM.put(address4, servo4_savedAngle);
-}
-
-void readSavedPositions() {
-  int address1 = 0;
-  int address2 = address1 + sizeof(int);
-  int address3 = address2 + sizeof(int);
-  int address4 = address3 + sizeof(int);
-
-  EEPROM.get(address1, servo1_savedAngle);
-  EEPROM.get(address2, servo2_savedAngle);
-  EEPROM.get(address3, servo3_savedAngle);
-  EEPROM.get(address4, servo4_savedAngle);
-}
-
-void sendSavedPositions() {
-  Serial.print(servo1_savedAngle);
-  Serial.print(",");
-  Serial.print(servo2_savedAngle);
-  Serial.print(",");
-  Serial.print(servo3_savedAngle);
-  Serial.print(",");
-  Serial.println(servo4_savedAngle);
 }
