@@ -91,12 +91,14 @@ void loop() {
 
 ISR (PCINT2_vect) {
   // código a ejecutar
-  PORTD &= (~(1 << PD5));
+  PORTD &= (~(1 << PD5)& ~(1 << PD7));
   if (PIND & B00010000) {
     PORTD |= (1 << PD5);
   }
+  if (PIND & B00001000) {
+    PORTD |= (1 << PD7);
+  }
 }
-
 
 void guardarPosicionesEnEEPROM() {
   // Leer las posiciones actuales de los servos
